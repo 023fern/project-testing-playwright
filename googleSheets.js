@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 
 const SPREADSHEET_ID = '1cpTnHCUrnQb0NAXbcRoowKOV0cyIS4llke4jnuiuHcw';
-const SHEET_NAME = 'Test Scenarios';
+const SHEET_NAME = 'Test Case Document';
 
 async function updateTestResult(testId, result) {
   const auth = new google.auth.GoogleAuth({
@@ -40,11 +40,11 @@ async function updateTestResult(testId, result) {
       valueInputOption: 'RAW',
       data: [
         {
-          range: `${SHEET_NAME}!G${actualRow}`,
+          range: `${SHEET_NAME}!I${actualRow}`,
           values: [[result]],
         },
         {
-          range: `${SHEET_NAME}!I${actualRow}`,
+          range: `${SHEET_NAME}!J${actualRow}`,
           values: [[runDate]],
         },
       ],
