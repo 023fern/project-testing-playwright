@@ -1,10 +1,79 @@
+require('../Hooks/testResultHook');
 const { test, expect } = require('@playwright/test');
-test('TC 10.0.001 - การเข้าสู่หน้าโปรไฟล์สำเร็จ', async ({ page }) => {
-  await page.goto('https://moodlocationproject.vercel.app/login');
+const path = require('path');
+
+test('TC 10.0.001 - การแก้ไขโปรไฟล์สำเร็จ', async ({ browser }) => {
+  const context = await browser.newContext({
+    permissions: ['geolocation'],
+    geolocation: {
+      latitude: 13.7563,
+      longitude: 100.5018,
+    },
+  });
+
+  const page = await context.newPage();
+
+  // --- 1. Login ---
+  await page.goto('https://moodlocation.vercel.app/login');
+
   await page.getByPlaceholder('your@email.com').fill('664259023@webmail.npru.ac.th');
   await page.locator('input[type="password"]').fill('111111');
+
   await page.click('button[type="submit"]');
-  await page.locator('button, a').filter({ hasText: 'โปรไฟล์' }).filter({ visible: true }).first().click();
-  await expect(page.locator('body')).toContainText(/ข้อมูลส่วนตัว|โปรไฟล์/);
-  await page.screenshot({ path: 'evidence/TC_10_0_001.png', fullPage: true });
+  // --- 2. เปิดเมนู ---
+  const menuBtn = page.locator('.hamburger-icon');
+  await expect(menuBtn).toBeVisible();
+
+  await menuBtn.click();
+
+  // --- 3. เปิดหน้าโปรไฟล์ ---
+  const profileMenu = page.getByText('โปรไฟล์ของฉัน');
+
+  await expect(profileMenu).toBeVisible();
+  await profileMenu.click();
+
+  await page.waitForLoadState('networkidle');
+
+  // --- 4. แก้ไขข้อมูลโปรไฟล์ ---
+  await page.getByRole('textbox').first().fill('สวัสดี');
+  await page.getByRole('textbox').nth(1).fill('วันพฤหัส');
+await page.getByRole('combobox').selectOption({
+  label: 'ชาย'
+});
+const imagePath = path.resolve(__dirname, '../../test-data/profile.jpg');
+
+console.log(imagePath);
+
+await page.locator('input[type="file"]').setInputFiles(imagePath);
+  // หากระบบอนุญาตให้แก้ไขอีเมล
+  // สามารถแก้ไขได้โดยใช้ Locator นี้
+  // await page.locator('input[type="email"]').fill('664259023@webmail.npru.ac.th');
+
+  // เลือกข้อมูลจาก Combobox (แก้ไขตามข้อมูลจริงของระบบ)
+  // await page.getByRole('combobox').selectOption({ label: '...' });
+
+  // --- 5. บันทึกข้อมูล ---
+  const saveButton = page.getByRole('button', {
+    name: 'บันทึกการเปลี่ยนแปลง',
+  });
+
+  await expect(saveButton).toBeEnabled();
+  await saveButton.click();
+
+  // --- 6. ตรวจสอบผลลัพธ์ ---
+ const successToast = page.getByText(/อัปเดตข้อมูลเรียบร้อยแล้ว!|/).first();
+
+  // --- 7. จับภาพหลักฐาน ---
+  await page.setViewportSize({
+    width: 1280,
+    height: 1000,
+  });
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  await page.screenshot({
+    path: 'evidence/TC_10_0_001_ProfileEditSuccess.png',
+  });
+
+  await context.close();
 });
