@@ -1,9 +1,9 @@
 require('../Hooks/testResultHook');
 const { test, expect } = require('@playwright/test');
 
-test.setTimeout(120000);
+test.setTimeout(180000);
 
-test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
+test('TC_2_0_007 - บัญชีถูกระงับ', async ({ browser }) => {
 
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -15,7 +15,8 @@ test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
   const adminEmail = '664259023@webmail.npru.ac.th';
   const adminPassword = '111111';
 
-  const keyword = 'fernkk4@gmail.com';
+  const userEmail = 'fernkk4@gmail.com';
+  const userPassword = '112233';
 
   // =========================
   // 1. Login Admin
@@ -56,7 +57,7 @@ test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
   ).toBeVisible();
 
   // =========================
-  // 3. รอข้อมูลผู้ใช้โหลด
+  // 3. รอข้อมูลโหลด
   // =========================
 
   const userRows = page.locator('table tbody tr');
@@ -71,37 +72,96 @@ test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
   // 4. ค้นหาผู้ใช้
   // =========================
 
-  const searchBox = page.getByPlaceholder('ค้นหาชื่อ หรือ อีเมล...');
+  await page
+    .getByPlaceholder('ค้นหาชื่อ หรือ อีเมล...')
+    .fill(userEmail);
 
-  await searchBox.fill(keyword);
+  const userRow = page
+    .locator('tbody tr')
+    .filter({
+      has: page.getByRole('cell', {
+        name: userEmail,
+      }),
+    });
+
+  await expect(userRow).toBeVisible({
+    timeout: 30000,
+  });
 
   // =========================
-  // 5. ตรวจสอบผลการค้นหา
+  // 5. Ban User
   // =========================
+
+  const banButton = userRow.locator('button').first();
+
+  await expect(banButton).toBeEnabled();
+
+  await banButton.click();
+
+  await page.getByRole('button', {
+    name: 'ตกลง',
+  }).click();
 
   await expect(
-    page.locator('table').getByRole('cell', {
-      name: keyword,
-    })
+    userRow.getByText('BANNED')
   ).toBeVisible({
     timeout: 30000,
   });
 
-  // (Optional) ตรวจสอบว่าเหลือเพียง 1 รายการ
-  await expect(async () => {
-    expect(await userRows.count()).toBe(1);
-  }).toPass({
+  // =========================
+  // 6. Logout Admin
+  // =========================
+
+  await page.getByRole('button', {
+    name: 'ออกจากระบบ',
+  }).click();
+
+  await page.getByRole('button', {
+    name: 'ใช่, ออกจากระบบ',
+  }).click();
+
+  await expect(
+    page.getByPlaceholder('your@email.com')
+  ).toBeVisible({
     timeout: 30000,
   });
 
   // =========================
-  // 6. Screenshot
+  // 7. Login User
   // =========================
 
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByPlaceholder('your@email.com').fill(userEmail);
+
+  await page
+    .locator('input[type="password"]')
+    .fill(userPassword);
+
+  await page.locator('button[type="submit"]').click();
+
+  // =========================
+  // 8. ตรวจสอบว่าเข้าสู่ระบบไม่ได้
+  // =========================
+
+  await expect(
+    page.getByText(/บัญชี.*ระงับ|ถูกระงับ/i)
+  ).toBeVisible({
+    timeout: 30000,
+  });
+
+  await expect(
+    page.getByPlaceholder('your@email.com')
+  ).toBeVisible();
+
+  // =========================
+  // 9. Screenshot
+  // =========================
+
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
 
   await page.screenshot({
-    path: 'evidence/TC_12_0_002_SearchUser.png',
+    path: 'evidence/TC_2_0_007_BannedUser.png',
     fullPage: true,
   });
 

@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.setTimeout(120000);
 
-test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
+test('TC_12_0_001 - แสดงรายชื่อผู้ใช้', async ({ browser }) => {
 
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -14,8 +14,6 @@ test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
 
   const adminEmail = '664259023@webmail.npru.ac.th';
   const adminPassword = '111111';
-
-  const keyword = 'fernkk4@gmail.com';
 
   // =========================
   // 1. Login Admin
@@ -45,9 +43,17 @@ test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
   // 2. เปิดหน้าจัดการสมาชิก
   // =========================
 
-  await page.getByRole('button', {
+  const memberButton = page.getByRole('button', {
     name: 'จัดการสมาชิก',
-  }).click();
+  });
+
+  await expect(memberButton).toBeVisible();
+
+  await memberButton.click();
+
+  // =========================
+  // 3. ตรวจสอบหน้าจัดการสมาชิก
+  // =========================
 
   await expect(
     page.getByRole('heading', {
@@ -56,52 +62,33 @@ test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
   ).toBeVisible();
 
   // =========================
-  // 3. รอข้อมูลผู้ใช้โหลด
+  // 4. ตรวจสอบว่ามีรายชื่อผู้ใช้
   // =========================
+const userRows = page.locator('table tbody tr');
 
-  const userRows = page.locator('table tbody tr');
+await expect(async () => {
+  expect(await userRows.count()).toBeGreaterThan(0);
+}).toPass({
+  timeout: 90000,
+});
 
-  await expect(async () => {
-    expect(await userRows.count()).toBeGreaterThan(0);
-  }).toPass({
-    timeout: 90000,
-  });
+// ตรวจสอบว่ามีอีเมลของผู้ใช้ในตาราง
+await expect(
+  page.locator('table').getByRole('cell', {
+    name: 'fernkk4@gmail.com',
+  })
+).toBeVisible();
 
-  // =========================
-  // 4. ค้นหาผู้ใช้
-  // =========================
 
-  const searchBox = page.getByPlaceholder('ค้นหาชื่อ หรือ อีเมล...');
-
-  await searchBox.fill(keyword);
-
-  // =========================
-  // 5. ตรวจสอบผลการค้นหา
-  // =========================
-
-  await expect(
-    page.locator('table').getByRole('cell', {
-      name: keyword,
-    })
-  ).toBeVisible({
-    timeout: 30000,
-  });
-
-  // (Optional) ตรวจสอบว่าเหลือเพียง 1 รายการ
-  await expect(async () => {
-    expect(await userRows.count()).toBe(1);
-  }).toPass({
-    timeout: 30000,
-  });
 
   // =========================
-  // 6. Screenshot
+  // 5. Screenshot
   // =========================
-
-  await page.evaluate(() => window.scrollTo(0, 0));
-
+await page.evaluate(() => {
+  window.scrollTo(0, 0);
+});
   await page.screenshot({
-    path: 'evidence/TC_12_0_002_SearchUser.png',
+    path: 'evidence/TC_12_0_001_UserList.png',
     fullPage: true,
   });
 

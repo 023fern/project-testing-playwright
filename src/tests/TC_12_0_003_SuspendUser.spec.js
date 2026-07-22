@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.setTimeout(120000);
 
-test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
+test('TC_12_0_003 - ระงับผู้ใช้สำเร็จ', async ({ browser }) => {
 
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -15,7 +15,7 @@ test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
   const adminEmail = '664259023@webmail.npru.ac.th';
   const adminPassword = '111111';
 
-  const keyword = 'fernkk4@gmail.com';
+  const targetEmail = 'fernkk4@gmail.com';
 
   // =========================
   // 1. Login Admin
@@ -67,41 +67,55 @@ test('TC_12_0_002 - ค้นหาผู้ใช้', async ({ browser }) => {
     timeout: 90000,
   });
 
-  // =========================
-  // 4. ค้นหาผู้ใช้
-  // =========================
+ // ค้นหาผู้ใช้
+const searchBox = page.getByPlaceholder('ค้นหาชื่อ หรือ อีเมล...');
 
-  const searchBox = page.getByPlaceholder('ค้นหาชื่อ หรือ อีเมล...');
+await searchBox.fill(targetEmail);
 
-  await searchBox.fill(keyword);
+const filteredRows = page.locator('tbody tr');
 
-  // =========================
-  // 5. ตรวจสอบผลการค้นหา
-  // =========================
+await expect(async () => {
+  expect(await filteredRows.count()).toBe(1);
+}).toPass({
+  timeout: 30000,
+});
 
-  await expect(
-    page.locator('table').getByRole('cell', {
-      name: keyword,
-    })
-  ).toBeVisible({
-    timeout: 30000,
-  });
-
-  // (Optional) ตรวจสอบว่าเหลือเพียง 1 รายการ
-  await expect(async () => {
-    expect(await userRows.count()).toBe(1);
-  }).toPass({
-    timeout: 30000,
-  });
+const userRow = filteredRows.first();
 
   // =========================
-  // 6. Screenshot
+  // 5. ระงับผู้ใช้
+  // =========================
+const banButton = userRow.locator('button').first();
+
+await expect(banButton).toBeEnabled();
+
+await banButton.click();
+  // =========================
+  // 6. ยืนยันการระงับ
+  // =========================
+
+await page.getByRole('button', {
+  name: 'ตกลง',
+}).click();
+
+await expect(userRow.getByText('BANNED')).toBeVisible({
+  timeout: 30000,
+});
+  // =========================
+  // 7. ตรวจสอบสถานะผู้ใช้
+  // =========================
+await expect(
+    userRow.getByText('BANNED')
+).toBeVisible();
+
+  // =========================
+  // 8. Screenshot
   // =========================
 
   await page.evaluate(() => window.scrollTo(0, 0));
 
   await page.screenshot({
-    path: 'evidence/TC_12_0_002_SearchUser.png',
+    path: 'evidence/TC_12_0_003_SuspendUser.png',
     fullPage: true,
   });
 

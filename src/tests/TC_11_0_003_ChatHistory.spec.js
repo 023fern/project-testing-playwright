@@ -224,7 +224,9 @@ await expect(
   // =========================
   // 10. Screenshot
   // =========================
-
+await page.evaluate(() => {
+  window.scrollTo(0, 0);
+});
   await page.screenshot({
     path: 'evidence/TC_11_0_003_ChatHistory.png',
     fullPage: true,

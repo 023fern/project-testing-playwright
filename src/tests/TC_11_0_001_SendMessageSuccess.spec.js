@@ -141,7 +141,9 @@ test('TC 11.0.001 - ส่งข้อความถึงแอดมินส
   // =========================
   // 8. แคปหน้าจอ
   // =========================
-
+await page.evaluate(() => {
+  window.scrollTo(0, 0);
+});
   await page.screenshot({
     path: 'evidence/TC_11_0_001_SendMessageSuccess.png',
     fullPage: true,

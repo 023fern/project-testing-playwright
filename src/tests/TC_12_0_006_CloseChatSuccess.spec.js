@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.setTimeout(180000);
 
-test('TC 11.0.002 - ตรวจสอบการรับข้อความตอบกลับจากแอดมิน', async ({ browser }) => {
+test('TC_12_0_006 - ปิดเคส/ลบแชทสำเร็จ', async ({ browser }) => {
 
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -168,19 +168,6 @@ await expect(
 
   await page.locator('button[type="submit"]').click();
 
-  // await expect(
-  //   page.getByText('เข้าสู่ระบบสำเร็จ')
-  // ).toBeVisible({
-  //   timeout: 30000,
-  // });
-
-  // =========================
-  // 8. ตอบข้อความ
-  // =========================
-
-//   await page.getByRole('link', {
-//   name: 'แดชบอร์ด',
-// }).click();
 
 const replyChatButton = page.getByRole('button', {
   name: 'ตอบแชทผู้ใช้',
@@ -246,133 +233,90 @@ await expect(closeChatButton).toBeVisible({
 });
 
 await closeChatButton.click();
+
 // =========================
-// 9. Logout Admin
+// 10. หา Card ของ Automation Test
 // =========================
 
-
-const adminLogoutButton = page.getByRole('button', {
-  name: 'ออกจากระบบ',
+const chatCard = page.locator(
+  'div.bg-white.rounded-\\[2\\.5rem\\]'
+).filter({
+  has: page.getByText('Automation Test', {
+    exact: true,
+  }),
 });
 
-await expect(adminLogoutButton).toBeVisible({
+await expect(chatCard.first()).toBeVisible({
   timeout: 30000,
 });
 
-await adminLogoutButton.click();
-const adminConfirmLogoutButton = page.getByRole('button', {
-  name: 'ใช่, ออกจากระบบ',
+// =========================
+// 11. กดปุ่มลบของ Card นี้
+// =========================
+
+const deleteButton = chatCard
+  .first()
+  .locator('button[title="ลบแชท / ปิดเคส"]');
+
+await expect(deleteButton).toBeVisible();
+
+await expect(deleteButton).toBeEnabled();
+
+await deleteButton.click();
+
+// =========================
+// 12. ยืนยันการปิดเคส
+// =========================
+
+const confirmCloseButton = page.getByRole('button', {
+  name: 'ลบแชทและปิดเคส',
 });
 
-await expect(adminConfirmLogoutButton).toBeVisible({
+await expect(confirmCloseButton).toBeVisible({
   timeout: 10000,
 });
 
-await adminConfirmLogoutButton.click();
+await confirmCloseButton.click();
 
-await expect(
-  page.getByPlaceholder('your@email.com')
-).toBeVisible({
+await expect(confirmCloseButton).toBeHidden({
+  timeout: 10000,
+});
+
+// =========================
+// 13. รอให้ Card หาย
+// =========================
+
+await expect(async () => {
+  await expect(
+    page.getByText('Automation Test', {
+      exact: true,
+    })
+  ).toHaveCount(0);
+}).toPass({
+  timeout: 30000,
+});
+// =========================
+// 13. รอ Backend ลบข้อมูล
+// =========================
+
+await expect(async () => {
+  expect(await chatCard.count()).toBe(0);
+}).toPass({
   timeout: 30000,
 });
 
-  // =========================
-  // 10. Login User อีกครั้ง
-  // =========================
+// =========================
+// 14. Screenshot
+// =========================
 
-  await page.goto('https://moodlocation.vercel.app/login');
-
-  await page.getByPlaceholder('your@email.com').fill(userEmail);
-
-  await page
-    .locator('input[type="password"]')
-    .fill(userPassword);
-
-  await page.locator('button[type="submit"]').click();
-
-  await expect(
-    page.getByText('เข้าสู่ระบบสำเร็จ')
-  ).toBeVisible({
-    timeout: 30000,
-  });
-
-  await expect(
-    page.getByRole('link', {
-      name: 'Profile',
-    })
-  ).toBeVisible();
-
-  // =========================
-  // 11. เปิดศูนย์ช่วยเหลือ
-  // =========================
-
-  await page
-    .getByRole('navigation')
-    .getByRole('link', {
-      name: 'ศูนย์ช่วยเหลือ',
-    })
-    .click();
-
-  // =========================
-  // 3. เปิดแชท
-  // =========================
-
-  const OpenChatButton = page.getByRole('button', {
-    name: 'เปิดช่องแชท',
-  });
-
-  await expect(OpenChatButton).toBeEnabled();
-
-  await OpenChatButton.click();
-
-    await page
-    .getByRole('textbox')
-    .first()
-    .fill('Automation Test');
-
-  await page
-    .getByRole('textbox')
-    .nth(1)
-    .fill('ตรวจสอบข้อความตอบกลับจากผู้ดูแลระบบ');
-
-  await page
-    .getByRole('button', {
-      name: 'ยืนยันและเริ่มแชท',
-    })
-    .click();
-
-  // =========================
-  // 13. ตรวจสอบข้อความตอบกลับ
-  // =========================
-
-  const replyMessage = page.getByText(adminReply, {
-    exact: true,
-  });
-
-  await expect(replyMessage).toBeVisible({
-    timeout: 30000,
-  });
-
-  await replyMessage.scrollIntoViewIfNeeded();
-
-  // ตรวจสอบข้อความเรียงลำดับ
-  await expect(
-    page.getByText(userMessage, {
-      exact: true,
-    })
-  ).toBeVisible();
-
-  // =========================
-  // 14. Screenshot
-  // =========================
 await page.evaluate(() => {
   window.scrollTo(0, 0);
 });
-  await page.screenshot({
-    path: 'evidence/TC_11_0_002_AdminReplySuccess.png',
-    fullPage: true,
-  });
 
-  await context.close();
+await page.screenshot({
+  path: 'evidence/TC_12_0_006_CloseChatSuccess.png',
+  fullPage: true,
+});
 
+await context.close();
 });
